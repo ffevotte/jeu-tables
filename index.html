@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" ng-app="game">
+  <head>
+    <meta charset="utf-8">
+    <title>Jeu des tables</title>
+
+    <!-- Angular JS -->
+    <script src="jquery.min.js"></script>
+    <script src="angular-1.6.9.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="bootstrap-4.0.0/css/bootstrap.min.css">
+
+    <!-- App-specific controller -->
+    <script src="tables.js"></script>
+
+
+    <style type="text/css">
+      .img1 {
+        border: 2px solid #28a745;
+      }
+
+      .img2 {
+        border: 2px solid #dc3545;
+      }
+
+      .img1.img2 {
+        border-top:    2px solid #28a745;
+        border-left:   2px solid #28a745;
+        border-right:  2px solid #dc3545;
+        border-bottom: 2px solid #dc3545;
+      }
+    </style>
+  </head>
+
+  <body ng-controller="GameController" ng-class="{'modal-open': settings.modal}">
+    <div class="container-fluid">
+
+      <!-- Settings button -->
+      <div style="padding-top:1em">
+        <a ng-click="settings.modal=true"
+           href="#" role="button"
+           aria-expanded="false"
+           style="float:right">
+          <img src="settings.svg" alt="Settings" width="50px">
+        </a>
+      </div>
+
+      <h1>Jeu des tables</h1>
+
+      <!-- Control panel -->
+      <div class="card" ng-class="{'d-none': game.status=='running'}">
+        <div class="card-body text-center" style="font-size: 24pt">
+          <div>
+            <img width="200px" src="defeat.svg"  ng-class="{'d-none': game.status!='defeat'}"/>
+            <img width="200px" src="victory.svg" ng-class="{'d-none': game.status!='victory'}"/>
+          </div>
+          <button id="start" class="btn btn-primary" ng-click="game.start()" autofocus>Démarrer</button>
+        </div>
+      </div>
+
+      <!-- Question -->
+      <div class="card" ng-class="{'d-none': game.status!='running'}">
+        <div class="card-body text-center" style="font-size: 24pt">
+          <div class="float-right">{{player.score}} / 100</div>
+          {{question.x}} ⨯ {{question.y}} =
+          <input type="text" id="answer"
+                 ng-model="question.answer"
+                 ng-change="question.validate()"></input>
+        </div>
+      </div>
+
+      <!-- Race between animals -->
+      <div class="card" style="margin-top: 1em">
+        <div class="card-body">
+          <div id="player-div">
+            <img src="{{settings.img1}}" width="200px" id="player"
+                 style="position:relative; left:0px; transition:all linear 400ms;"/>
+          </div>
+          <div id="animal-div">
+            <img src="{{settings.img2}}" width="200px" id="animal"
+                 style="position:relative; left:0px;"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1em" ng-show="settings.showStats">
+        <table>
+          <tr>
+            <th>⨯</th>
+            <th ng-repeat="col in stats[0] track by $index">
+              {{$index+1}}
+            </th>
+          </tr>
+          <tr ng-repeat="row in stats track by $index">
+            <th>{{$index+1}}</th>
+            <td ng-repeat="col in row track by $index"
+                style="padding-left:0.5em"
+                ng-class="statsColor($parent.$index, $index)">
+              {{stats[$parent.$index][$index] | number:2}}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+
+
+      <!-- Settings -->
+      <div class="modal-backdrop fade show"
+           ng-class="{'d-none': !settings.modal}"></div>
+      <div class="modal fade" id="settings" tabindex="-1" role="dialog"
+           ng-class="{show: settings.modal, 'd-block': settings.modal}"
+           aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Configuration</h5>
+              <button type="button" class="close" aria-label="Close" ng-click="settings.modal=false">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="container-fluid">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6>Opérandes</h6>
+                    <table>
+                      <tr><td>x<sub>min</sub>&nbsp;:</td><td><input ng-model="settings.xmin"></td></tr>
+                      <tr><td>x<sub>max</sub>&nbsp;:</td><td><input ng-model="settings.xmax"></td></tr>
+                      <tr><td>y<sub>min</sub>&nbsp;:</td><td><input ng-model="settings.ymin"></td></tr>
+                      <tr><td>y<sub>max</sub>&nbsp;:</td><td><input ng-model="settings.ymax"></td></tr>
+                    </table>
+                    <div class="form-group form-check" style="margin-top: 1em;">
+                      <input type="checkbox" class="form-check-input"
+                             ng-model="settings.advanced" id="settings-advanced">
+                      <label class="form-check-label" for="settings-advanced">Paramètres avancés</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <form>
+                      <h6>Niveau</h6>
+                      <div class="btn-group btn-group-toggle">
+                        <label ng-repeat="v in settings.levels"
+                               class="btn btn-outline-primary" ng-class="{active: (settings.delay==v[0])}">
+                          <input type="radio"
+                                 ng-model="settings.delay" ng-value="{{v[0]}}">{{v[1]}}
+                        </label>
+                      </div>
+                      <span style="margin-left: 1em">(délai: {{settings.delay}} s.)</span>
+                    </form>
+
+                    <h6 style="margin-top: 1em">Animaux</h6>
+                    <div>
+                      <img ng-repeat="a in animals track by $index" src="{{a}}" width="30px"
+                           style="float:left" ng-class="{img1: settings.img1==a,
+                                                        img2:  settings.img2==a}"
+                           ng-mousedown="settings.selectAnimal($event, a)"
+                           oncontextmenu="return false"/>
+                    </div>
+                    <table style="font-size:small; font-style:italic; clear:both">
+                      <tr><td style="padding-right:0.5em">click gauche:</td><td>animal du joueur</td></tr>
+                      <tr><td style="padding-right:0.5em">click droit:</td><td> animal adverse</td></tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="container-fluid" ng-show="settings.advanced">
+                <h6>Statistiques et stockage local</h6>
+                <div class="form-group form-check" style="margin-top: 1em;">
+                  <input type="checkbox" class="form-check-input"
+                         ng-model="settings.showStats" id="settings-showStats">
+                  <label class="form-check-label" for="settings-showStats">Afficher les statistiques</label>
+                </div>
+                <buttom type="button" class="btn btn-secondary"
+                ng-click="resetStorage()">Ré-initialiser les statistiques</button>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" ng-click="settings.modal=false">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
