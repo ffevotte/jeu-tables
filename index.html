@@ -64,7 +64,7 @@
       <div class="card" ng-class="{'d-none': game.status!='running'}">
         <div class="card-body text-center" style="font-size: 24pt">
           <div class="float-right">{{player.score}} / 100</div>
-          {{question.x}} ⨯ {{question.y}} =
+          {{question.x}} {{settings.opName()}} {{question.y}} =
           <input type="text" id="answer"
                  ng-model="question.answer"
                  ng-change="question.validate()"></input>
@@ -88,17 +88,17 @@
       <div class="card" style="margin-top: 1em" ng-show="settings.showStats">
         <table>
           <tr>
-            <th>⨯</th>
-            <th ng-repeat="col in stats[0] track by $index">
+            <th>{{settings.opName()}}</th>
+            <th ng-repeat="col in stats[settings.opName()][0] track by $index">
               {{$index+1}}
             </th>
           </tr>
-          <tr ng-repeat="row in stats track by $index">
+          <tr ng-repeat="row in stats[settings.opName()] track by $index">
             <th>{{$index+1}}</th>
             <td ng-repeat="col in row track by $index"
                 style="padding-left:0.5em"
                 ng-class="statsColor($parent.$index, $index)">
-              {{stats[$parent.$index][$index] | number:2}}
+              {{stats[settings.opName()][$parent.$index][$index] | number:2}}
             </td>
           </tr>
         </table>
@@ -124,7 +124,18 @@
               <div class="container-fluid">
                 <div class="row">
                   <div class="col-md-6">
-                    <h6>Opérandes</h6>
+                    <form>
+                      <h6>Opération</h6>
+                      <div class="btn-group btn-group-toggle">
+                        <label ng-repeat="op in settings.opNames track by $index"
+                               class="btn btn-outline-primary" ng-class="{active: (settings.opIndex==$index)}">
+                          <input type="radio"
+                                 ng-model="settings.opIndex" ng-value="{{$index}}">{{op}}</input>
+                        </label>
+                      </div>
+                    </form>
+
+                    <h6 style="margin-top:1em">Opérandes</h6>
                     <table>
                       <tr><td>x<sub>min</sub>&nbsp;:</td><td><input ng-model="settings.xmin"></td></tr>
                       <tr><td>x<sub>max</sub>&nbsp;:</td><td><input ng-model="settings.xmax"></td></tr>

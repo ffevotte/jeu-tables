@@ -11,6 +11,8 @@ game.controller('GameController', function GameController($scope, $interval) {
     ];
 
     $scope.settings = {
+        opIndex: 0,
+
         xmin: 1,
         xmax: 10,
         ymin: 1,
@@ -32,18 +34,42 @@ game.controller('GameController', function GameController($scope, $interval) {
                 break;
             }
         },
+
+        showStats: true,
+        advanced: true,
     };
 
     $scope.settings.delay = $scope.settings.levels[0][0];
+    $scope.settings.opNames = [];
+    $scope.settings.opFuns  = [];
+
+    $scope.settings.addOp = function(name, fun) {
+        $scope.settings.opNames.push(name);
+        $scope.settings.opFuns.push(fun);
+    };
+
+    $scope.settings.addOp('+', function(x, y) {return x + y;});
+    $scope.settings.addOp('×', function(x, y) {return x * y;});
+
+    $scope.settings.opName = function() {
+        return $scope.settings.opNames[$scope.settings.opIndex];
+    };
+
+    $scope.settings.op = function(x, y) {
+        return $scope.settings.opFuns[$scope.settings.opIndex](x, y);
+    };
 
     $scope.resetStorage = function() {
-        var stats = Array(10);
-        for (var i=0 ; i<10 ; i++) {
-            stats[i] = Array(10);
-            for (var j = 0 ; j<10 ; ++j) {
-                stats[i][j] = 1.;
+        var stats = {};
+        $scope.settings.opNames.forEach(function (op) {
+            stats[op] = Array(10);
+            for (var i=0 ; i<10 ; i++) {
+                stats[op][i] = Array(10);
+                for (var j = 0 ; j<10 ; ++j) {
+                    stats[op][i][j] = 1.;
+                }
             }
-        }
+        });
         localStorage.stats = JSON.stringify(stats);
         $scope.stats = JSON.parse(localStorage.stats);
     }
@@ -55,13 +81,13 @@ game.controller('GameController', function GameController($scope, $interval) {
 
     //$scope.settings.showStats = true;
     $scope.statsColor = function(i,j) {
-        if ($scope.stats[i][j] < 1) {
+        if ($scope.stats[$scope.settings.opName()][i][j] < 1) {
             return "bg-success";
         }
-        if ($scope.stats[i][j] == 1) {
+        if ($scope.stats[$scope.settings.opName()][i][j] == 1) {
             return "";
         }
-        if ($scope.stats[i][j] < 2) {
+        if ($scope.stats[$scope.settings.opName()][i][j] < 2) {
             return "bg-warning";
         }
         return "bg-danger";
@@ -141,7 +167,7 @@ game.controller('GameController', function GameController($scope, $interval) {
 
             var total = 0.;
             forEachPair (function(i,j){
-                total += $scope.stats[i][j];
+                total += $scope.stats[$scope.settings.opName()][i][j];
                 return null;
             });
             console.log("total = ", total);
@@ -149,7 +175,7 @@ game.controller('GameController', function GameController($scope, $interval) {
             var threshold = Math.random() * total;
             total = 0.;
             return forEachPair (function(i,j){
-                total += $scope.stats[i][j];
+                total += $scope.stats[$scope.settings.opName()][i][j];
                 if (total >= threshold) {
                     return [i+1, j+1];
                 }
@@ -174,7 +200,7 @@ game.controller('GameController', function GameController($scope, $interval) {
 
             $scope.question.x = x;
             $scope.question.y = y;
-            $scope.question.result = x * y;
+            $scope.question.result = $scope.settings.op(x, y);
             $scope.question.answer = "";
 
             $scope.question.start = new Date().getTime();
@@ -189,7 +215,7 @@ game.controller('GameController', function GameController($scope, $interval) {
                 if (gameEnd && multiplier < 1) {
                     multiplier = 1;
                 }
-                $scope.stats[$scope.question.x-1][$scope.question.y-1] *= multiplier;
+                $scope.stats[$scope.settings.opName()][$scope.question.x-1][$scope.question.y-1] *= multiplier;
                 localStorage.stats = JSON.stringify($scope.stats);
 
                 if (gameEnd) {
