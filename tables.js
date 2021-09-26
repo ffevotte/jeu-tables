@@ -19,7 +19,13 @@ game.controller('GameController', function GameController($scope, $interval) {
         ymax: 10,
         modal: false,
 
-        levels: [[70, 'Bronze'], [60, 'Argent'], [50, 'Or']],
+        levels: [[80, 'Blanche'],
+                 [70, 'Jaune'],
+                 [60, 'Orange'],
+                 [50, 'Verte'],
+                 [40, 'Bleue'],
+                 [30, 'Marron'],
+                 [20, 'Noire']],
 
         img1: $scope.animals[0],
         img2: $scope.animals[1],
